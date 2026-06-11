@@ -1,6 +1,6 @@
 import streamlit as st
 import requests
-from openai import OpenAI
+from openai
 
 st.set_page_config(page_title="Smart Hybrid AI Router", layout="wide")
 
