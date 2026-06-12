@@ -19,16 +19,49 @@ st.title("🤖 AI Study & Career Assistant")
 
 # ---------------- AI CHAT (SAFE DEMO) ----------------
 if feature == "AI Chat (Demo)":
+
     user_input = st.text_input("Ask anything")
 
+    # show history
+    for role, msg in st.session_state.chat:
+        if role == "user":
+            with st.chat_message("user"):
+                st.markdown(msg)
+        else:
+            with st.chat_message("assistant"):
+                st.markdown(msg)
+
+    def demo_ai(text):
+        text = text.lower()
+
+        if "hello" in text:
+            return "👋 Hello! I am your AI Study Assistant."
+
+        elif "what is ai" in text or "ai" in text:
+            return "🧠 AI is Artificial Intelligence."
+
+        elif "pdf" in text:
+            return "📄 Use PDF Simplifier for documents."
+
+        elif "resume" in text:
+            return "💼 Use Resume Matcher for job matching."
+
+        else:
+            return f"🤖 You said: {text}"
+
     if user_input:
+
         st.session_state.chat.append(("user", user_input))
 
-        # SAFE RESPONSE (NO API NEEDED)
-        reply = f"🧠 AI Demo Answer: I understand '{user_input}'. This is a safe offline response for demo."
+        with st.chat_message("user"):
+            st.markdown(user_input)
+
+        reply = demo_ai(user_input)
+
+        with st.chat_message("assistant"):
+            st.markdown(reply)
 
         st.session_state.chat.append(("bot", reply))
-
     for role, msg in st.session_state.chat:
         if role == "user":
             st.markdown(f"**🧑 You:** {msg}")
