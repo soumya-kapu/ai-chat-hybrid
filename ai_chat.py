@@ -1,70 +1,76 @@
 import streamlit as st
-from openai import OpenAI
+import PyPDF2
 
-st.set_page_config(page_title="AI Router Pro", layout="wide")
+st.set_page_config(page_title="AI Study & Career Assistant", layout="wide")
 
-# ---------------- SESSION STATE ----------------
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+# ---------------- SESSION ----------------
+if "chat" not in st.session_state:
+    st.session_state.chat = []
 
 # ---------------- SIDEBAR ----------------
-st.sidebar.title("⚙️ AI Controls")
+st.sidebar.title("⚙️ Features")
 
-mode = st.sidebar.selectbox(
-    "AI Mode",
-    ["Smart Answer", "Simple Explanation", "Code Assistant"]
+feature = st.sidebar.selectbox(
+    "Choose Feature",
+    ["AI Chat (Demo)", "PDF Simplifier", "Resume Matcher"]
 )
 
-api_key = st.sidebar.text_input("Enter OpenAI API Key (only needed for AI replies)", type="password")
+st.title("🤖 AI Study & Career Assistant")
 
-clear = st.sidebar.button("🧹 Clear Chat")
+# ---------------- AI CHAT (SAFE DEMO) ----------------
+if feature == "AI Chat (Demo)":
+    user_input = st.text_input("Ask anything")
 
-if clear:
-    st.session_state.messages = []
+    if user_input:
+        st.session_state.chat.append(("user", user_input))
 
-st.title("🤖 AI Router Pro")
+        # SAFE RESPONSE (NO API NEEDED)
+        reply = f"🧠 AI Demo Answer: I understand '{user_input}'. This is a safe offline response for demo."
 
-# ---------------- CHAT DISPLAY ----------------
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+        st.session_state.chat.append(("bot", reply))
 
-# ---------------- INPUT ----------------
-user_input = st.chat_input("Say something...")
+    for role, msg in st.session_state.chat:
+        if role == "user":
+            st.markdown(f"**🧑 You:** {msg}")
+        else:
+            st.markdown(f"**🤖 AI:** {msg}")
 
-# ---------------- SYSTEM PROMPT ----------------
-def get_system_prompt(mode):
-    if mode == "Smart Answer":
-        return "You are a highly intelligent assistant."
-    elif mode == "Simple Explanation":
-        return "Explain in very simple language."
-    elif mode == "Code Assistant":
-        return "You are a coding expert."
-    return "You are helpful."
+# ---------------- PDF SIMPLIFIER ----------------
+elif feature == "PDF Simplifier":
+    st.subheader("📄 Upload PDF to Simplify")
 
-if user_input:
+    file = st.file_uploader("Upload PDF", type=["pdf"])
 
-    st.session_state.messages.append({"role": "user", "content": user_input})
+    if file:
+        reader = PyPDF2.PdfReader(file)
+        text = ""
 
-    with st.chat_message("user"):
-        st.markdown(user_input)
+        for page in reader.pages:
+            text += page.extract_text() or ""
 
-    # 👉 TEMP DEMO RESPONSE (NO API KEY REQUIRED)
-    if not api_key:
-        reply = "🤖 Demo Mode: Please add API key for real AI responses."
+        st.write("### 📌 Simplified Summary")
+        st.success(text[:2000] + " ...")
 
-    else:
-        client = OpenAI(api_key=api_key)
+        st.info("✨ This is simplified extraction (you can enhance later with AI)")
 
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                response = client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[
-                        {"role": "system", "content": "You are helpful"},
-                        {"role": "user", "content": user_input}
-                    ]
-                )
-                reply = response.choices[0].message.content
+# ---------------- RESUME MATCHER ----------------
+elif feature == "Resume Matcher":
+    st.subheader("🧠 Resume vs Job Match Tool")
 
-    st.session_state.messages.append({"role": "assistant", "content": reply})
+    resume = st.text_area("Paste Resume")
+    job = st.text_area("Paste Job Description")
+
+    if resume and job:
+        resume_words = set(resume.lower().split())
+        job_words = set(job.lower().split())
+
+        match_score = len(resume_words & job_words) / len(job_words) * 100
+
+        st.metric("Match Score", f"{match_score:.2f}%")
+
+        if match_score > 60:
+            st.success("🎯 Good Match")
+        elif match_score > 30:
+            st.warning("⚠️ Partial Match")
+        else:
+            st.error("❌ Low Match")
