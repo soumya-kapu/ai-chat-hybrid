@@ -42,37 +42,29 @@ def get_system_prompt(mode):
         return "You are a coding expert."
     return "You are helpful."
 
-# ---------------- LOGIC ----------------
 if user_input:
-    
-    # show user message immediately
+
     st.session_state.messages.append({"role": "user", "content": user_input})
-    
+
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    # CASE 1: NO API KEY → fallback response (NO ERROR)
+    # 👉 TEMP DEMO RESPONSE (NO API KEY REQUIRED)
     if not api_key:
-        reply = "⚠️ Please enter API key to get AI response."
+        reply = "🤖 Demo Mode: Please add API key for real AI responses."
 
-    # CASE 2: WITH API KEY → real OpenAI response
     else:
         client = OpenAI(api_key=api_key)
 
         with st.chat_message("assistant"):
-            with st.spinner("Thinking... 🤖"):
+            with st.spinner("Thinking..."):
                 response = client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[
-                        {"role": "system", "content": get_system_prompt(mode)},
-                        *[
-                            {"role": m["role"], "content": m["content"]}
-                            for m in st.session_state.messages
-                        ]
+                        {"role": "system", "content": "You are helpful"},
+                        {"role": "user", "content": user_input}
                     ]
                 )
-
                 reply = response.choices[0].message.content
-                st.markdown(reply)
 
     st.session_state.messages.append({"role": "assistant", "content": reply})
