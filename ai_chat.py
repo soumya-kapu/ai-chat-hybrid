@@ -1,105 +1,140 @@
 import streamlit as st
 import PyPDF2
 
-st.set_page_config(page_title="AI Study & Career Assistant", layout="wide")
+st.set_page_config(
+    page_title="Smart PDF & Career Assistant",
+    layout="wide"
+)
 
-# ---------------- SESSION ----------------
-if "chat" not in st.session_state:
-    st.session_state.chat = []
+st.title("📄 Smart PDF & Career Assistant")
 
-# ---------------- SIDEBAR ----------------
 st.sidebar.title("⚙️ Features")
 
 feature = st.sidebar.selectbox(
     "Choose Feature",
-    ["AI Chat (Demo)", "PDF Simplifier", "Resume Matcher"]
+    [
+        "Smart PDF Simplifier",
+        "Resume Matcher"
+    ]
 )
 
-st.title("🤖 AI Study & Career Assistant")
+# =========================
+# SMART PDF SIMPLIFIER
+# =========================
 
-# ---------------- AI CHAT (SAFE DEMO) ----------------
-if feature == "AI Chat (Demo)":
+if feature == "Smart PDF Simplifier":
 
-    user_input = st.text_input("Ask anything")
+    st.subheader("📄 Smart PDF Simplifier")
 
-    # show history
-    for role, msg in st.session_state.chat:
-        if role == "user":
-            with st.chat_message("user"):
-                st.markdown(msg)
-        else:
-            with st.chat_message("assistant"):
-                st.markdown(msg)
+    uploaded_file = st.file_uploader(
+        "Upload a PDF File",
+        type=["pdf"]
+    )
 
-    def demo_ai(text):
-        text = text.lower()
+    if uploaded_file:
 
-        if "hello" in text:
-            return "👋 Hello! I am your AI Study Assistant."
+        reader = PyPDF2.PdfReader(uploaded_file)
 
-        elif "what is ai" in text or "ai" in text:
-            return "🧠 AI is Artificial Intelligence."
-
-        elif "pdf" in text:
-            return "📄 Use PDF Simplifier for documents."
-
-        elif "resume" in text:
-            return "💼 Use Resume Matcher for job matching."
-
-        else:
-            return f"🤖 You said: {text}"
-
-    if user_input:
-
-        st.session_state.chat.append(("user", user_input))
-
-        with st.chat_message("user"):
-            st.markdown(user_input)
-
-        reply = demo_ai(user_input)
-
-        with st.chat_message("assistant"):
-            st.markdown(reply)
-
-        st.session_state.chat.append(("bot", reply))
-    for role, msg in st.session_state.chat:
-        if role == "user":
-            st.markdown(f"**🧑 You:** {msg}")
-        else:
-            st.markdown(f"**🤖 AI:** {msg}")
-
-# ---------------- PDF SIMPLIFIER ----------------
-elif feature == "PDF Simplifier":
-    st.subheader("📄 Upload PDF to Simplify")
-
-    file = st.file_uploader("Upload PDF", type=["pdf"])
-
-    if file:
-        reader = PyPDF2.PdfReader(file)
         text = ""
 
         for page in reader.pages:
             text += page.extract_text() or ""
 
-        st.write("### 📌 Simplified Summary")
-        st.success(text[:2000] + " ...")
+        words = text.split()
 
-        st.info("✨ This is simplified extraction (you can enhance later with AI)")
+        st.success("✅ PDF Processed Successfully")
 
-# ---------------- RESUME MATCHER ----------------
+        # Document Statistics
+        st.write("## 📊 Document Statistics")
+
+        pages = len(reader.pages)
+        word_count = len(words)
+        reading_time = max(1, round(word_count / 200))
+
+        col1, col2, col3 = st.columns(3)
+
+        col1.metric("Pages", pages)
+        col2.metric("Words", word_count)
+        col3.metric("Reading Time", f"{reading_time} min")
+
+        # Summary
+        st.write("## 📝 Short Summary")
+
+        summary = " ".join(words[:200])
+
+        st.info(summary + "...")
+
+        # Key Points
+        st.write("## 🔑 Key Points")
+
+        sentences = text.split(".")
+
+        shown = 0
+
+        for sentence in sentences:
+            sentence = sentence.strip()
+
+            if len(sentence) > 40:
+                st.write(f"• {sentence}")
+                shown += 1
+
+            if shown == 5:
+                break
+
+        # Keywords
+        st.write("## 🎯 Important Keywords")
+
+        keywords = []
+
+        for word in words:
+
+            clean_word = word.lower().strip(
+                ",.!?;:()[]{}"
+            )
+
+            if (
+                len(clean_word) > 5
+                and clean_word not in keywords
+            ):
+                keywords.append(clean_word)
+
+        st.success(", ".join(keywords[:20]))
+
+        # Study Questions
+        st.write("## ❓ Study Questions")
+
+        st.write("1. What is the main topic of this document?")
+        st.write("2. Which concepts are most important?")
+        st.write("3. What conclusions are presented?")
+        st.write("4. What should a student remember?")
+        st.write("5. Which areas need further study?")
+
+# =========================
+# RESUME MATCHER
+# =========================
+
 elif feature == "Resume Matcher":
-    st.subheader("🧠 Resume vs Job Match Tool")
+
+    st.subheader("💼 Resume vs Job Match Tool")
 
     resume = st.text_area("Paste Resume")
+
     job = st.text_area("Paste Job Description")
 
     if resume and job:
+
         resume_words = set(resume.lower().split())
         job_words = set(job.lower().split())
 
-        match_score = len(resume_words & job_words) / len(job_words) * 100
+        match_score = (
+            len(resume_words & job_words)
+            / len(job_words)
+        ) * 100
 
-        st.metric("Match Score", f"{match_score:.2f}%")
+        st.metric(
+            "Match Score",
+            f"{match_score:.2f}%"
+        )
 
         if match_score > 60:
             st.success("🎯 Good Match")
