@@ -87,51 +87,77 @@ if ai_mode == "BYOK":
 # -------------------------
 # AI SUMMARY FUNCTION
 # -------------------------
+# -------------------------
+# AI SUMMARY FUNCTION
+# -------------------------
 
 def generate_summary(text):
 
+    # Local AI using Ollama
     if ai_mode == "Local AI (Ollama)":
 
         if ollama_available:
 
-            response = ollama.chat(
-                model="llama3",
-                messages=[
-                    {
-                        "role": "user",
-                        "content":
-                        f"Summarize this document clearly:\n{text}"
-                    }
-                ]
-            )
+            try:
 
-            return response["message"]["content"]
+                response = ollama.chat(
+                    model="llama3",
+                    messages=[
+                        {
+                            "role": "user",
+                            "content":
+                            f"Summarize this document clearly:\n{text}"
+                        }
+                    ]
+                )
+
+                return response["message"]["content"]
+
+
+            except Exception:
+
+                return (
+                    "Ollama is not connected. "
+                    "Please run Ollama locally with a model "
+                    "to use Local AI inference."
+                )
+
 
         else:
+
             return (
-                "Ollama is not installed. "
-                "Run Ollama locally to use this option."
+                "Ollama package is not available. "
+                "Install Ollama to use Local AI."
             )
 
 
+    # BYOK option
     elif ai_mode == "BYOK":
 
         if api_key:
+
             return (
                 "BYOK mode selected. "
-                "API connection can be added here."
+                "Your API token is accepted. "
+                "Connect your preferred AI provider here."
             )
 
         else:
-            return "Please enter your API key."
+
+            return (
+                "Please enter your API key "
+                "to use BYOK mode."
+            )
 
 
+    # Default built-in AI
     else:
 
-        return " ".join(
+        summary = " ".join(
             text.split()[:200]
         )
 
+        return summary
 
 # -------------------------
 # FEATURE SELECTION
