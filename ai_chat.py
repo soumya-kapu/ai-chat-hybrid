@@ -2,24 +2,39 @@ import streamlit as st
 import PyPDF2
 from deep_translator import GoogleTranslator
 
+try:
+    import ollama
+    ollama_available = True
+except:
+    ollama_available = False
+
+
 st.set_page_config(
     page_title="Smart PDF & Career Assistant",
     layout="wide"
 )
 
+
+# -------------------------
+# LANGUAGE SUPPORT
+# -------------------------
+
 translations = {
+
     "English": {
         "title": "📄 Smart PDF & Career Assistant",
         "pdf": "Smart PDF Simplifier",
         "resume": "Resume Matcher",
         "upload": "Upload a PDF File"
     },
+
     "తెలుగు": {
         "title": "📄 స్మార్ట్ PDF & కెరీర్ అసిస్టెంట్",
         "pdf": "స్మార్ట్ PDF సరళీకరణ",
         "resume": "రెజ్యూమ్ మ్యాచ్",
         "upload": "PDF ఫైల్ అప్లోడ్ చేయండి"
     },
+
     "हिन्दी": {
         "title": "📄 स्मार्ट PDF और करियर असिस्टेंट",
         "pdf": "स्मार्ट PDF सरलकर्ता",
@@ -31,13 +46,96 @@ translations = {
 
 language = st.sidebar.selectbox(
     "🌐 Language",
-    ["English", "తెలుగు", "हिन्दी"]
+    [
+        "English",
+        "తెలుగు",
+        "हिन्दी"
+    ]
 )
+
 
 t = translations[language]
 
+
 st.title(t["title"])
 
+
+# -------------------------
+# AI MODE
+# -------------------------
+
+ai_mode = st.sidebar.selectbox(
+    "🤖 AI Mode",
+    [
+        "Built-in AI",
+        "Local AI (Ollama)",
+        "BYOK"
+    ]
+)
+
+
+api_key = ""
+
+if ai_mode == "BYOK":
+
+    api_key = st.sidebar.text_input(
+        "Enter your AI API Key",
+        type="password"
+    )
+
+
+# -------------------------
+# AI SUMMARY FUNCTION
+# -------------------------
+
+def generate_summary(text):
+
+    if ai_mode == "Local AI (Ollama)":
+
+        if ollama_available:
+
+            response = ollama.chat(
+                model="llama3",
+                messages=[
+                    {
+                        "role": "user",
+                        "content":
+                        f"Summarize this document clearly:\n{text}"
+                    }
+                ]
+            )
+
+            return response["message"]["content"]
+
+        else:
+            return (
+                "Ollama is not installed. "
+                "Run Ollama locally to use this option."
+            )
+
+
+    elif ai_mode == "BYOK":
+
+        if api_key:
+            return (
+                "BYOK mode selected. "
+                "API connection can be added here."
+            )
+
+        else:
+            return "Please enter your API key."
+
+
+    else:
+
+        return " ".join(
+            text.split()[:200]
+        )
+
+
+# -------------------------
+# FEATURE SELECTION
+# -------------------------
 
 feature = st.sidebar.selectbox(
     "Choose Feature",
@@ -46,10 +144,8 @@ feature = st.sidebar.selectbox(
         t["resume"]
     ]
 )
-
-
 # -------------------------
-# PDF SIMPLIFIER
+# SMART PDF SIMPLIFIER
 # -------------------------
 
 if feature == t["pdf"]:
@@ -76,9 +172,11 @@ if feature == t["pdf"]:
 
 
         if len(words) == 0:
+
             st.error(
                 "No readable text found. This PDF may be scanned."
             )
+
 
         else:
 
@@ -89,19 +187,25 @@ if feature == t["pdf"]:
 
             # Statistics
 
-            st.write("## 📊 Document Statistics")
+            st.write(
+                "## 📊 Document Statistics"
+            )
+
 
             col1, col2, col3 = st.columns(3)
+
 
             col1.metric(
                 "Pages",
                 len(reader.pages)
             )
 
+
             col2.metric(
                 "Words",
                 len(words)
             )
+
 
             col3.metric(
                 "Reading Time",
@@ -109,13 +213,17 @@ if feature == t["pdf"]:
             )
 
 
-            # Summary
+            # AI Summary
 
-            st.write("## 📝 Smart Summary")
+            st.write(
+                "## 📝 Smart Summary"
+            )
 
 
-            summary = " ".join(words[:200])
+            summary = generate_summary(text)
 
+
+            # Translation
 
             if language == "తెలుగు":
 
@@ -136,12 +244,16 @@ if feature == t["pdf"]:
             st.info(summary)
 
 
+
             # Keywords
 
-            st.write("## 🎯 Important Keywords")
+            st.write(
+                "## 🎯 Important Keywords"
+            )
 
 
             keywords = []
+
 
             for word in words:
 
@@ -149,9 +261,12 @@ if feature == t["pdf"]:
                     ",.!?;:()[]{}"
                 )
 
+
                 if len(clean) > 5:
+
                     if clean not in keywords:
                         keywords.append(clean)
+
 
 
             keyword_text = ", ".join(
@@ -175,7 +290,10 @@ if feature == t["pdf"]:
                 ).translate(keyword_text)
 
 
+
             st.success(keyword_text)
+
+
 
 
 
@@ -185,7 +303,10 @@ if feature == t["pdf"]:
 
 elif feature == t["resume"]:
 
-    st.subheader(t["resume"])
+
+    st.subheader(
+        t["resume"]
+    )
 
 
     resume = st.text_area(
@@ -198,6 +319,7 @@ elif feature == t["resume"]:
     )
 
 
+
     if resume and job:
 
 
@@ -205,29 +327,47 @@ elif feature == t["resume"]:
             resume.lower().split()
         )
 
+
         job_words = set(
             job.lower().split()
         )
 
 
-        score = (
-            len(resume_words & job_words)
-            /
-            len(job_words)
-        ) * 100
+
+        if len(job_words) > 0:
 
 
-        st.metric(
-            "Match Score",
-            f"{score:.2f}%"
-        )
+            score = (
+                len(resume_words & job_words)
+                /
+                len(job_words)
+            ) * 100
 
 
-        if score > 60:
-            st.success("🎯 Good Match")
 
-        elif score > 30:
-            st.warning("⚠️ Partial Match")
+            st.metric(
+                "Match Score",
+                f"{score:.2f}%"
+            )
 
-        else:
-            st.error("❌ Low Match")
+
+
+            if score > 60:
+
+                st.success(
+                    "🎯 Good Match"
+                )
+
+
+            elif score > 30:
+
+                st.warning(
+                    "⚠️ Partial Match"
+                )
+
+
+            else:
+
+                st.error(
+                    "❌ Low Match"
+                )
