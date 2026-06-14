@@ -1,5 +1,6 @@
 import streamlit as st
 import PyPDF2
+from deep_translator import GoogleTranslator
 
 st.set_page_config(
     page_title="Smart PDF & Career Assistant",
@@ -11,30 +12,22 @@ translations = {
         "title": "📄 Smart PDF & Career Assistant",
         "pdf": "Smart PDF Simplifier",
         "resume": "Resume Matcher",
-        "upload": "Upload a PDF File",
-        "resume_text": "Paste Resume",
-        "job_text": "Paste Job Description",
-        "processed": "✅ PDF Processed Successfully"
+        "upload": "Upload a PDF File"
     },
     "తెలుగు": {
         "title": "📄 స్మార్ట్ PDF & కెరీర్ అసిస్టెంట్",
         "pdf": "స్మార్ట్ PDF సరళీకరణ",
         "resume": "రెజ్యూమ్ మ్యాచ్",
-        "upload": "PDF ఫైల్ అప్లోడ్ చేయండి",
-        "resume_text": "రెజ్యూమ్ పేస్ట్ చేయండి",
-        "job_text": "జాబ్ వివరణ పేస్ట్ చేయండి",
-        "processed": "✅ PDF విజయవంతంగా ప్రాసెస్ చేయబడింది"
+        "upload": "PDF ఫైల్ అప్లోడ్ చేయండి"
     },
     "हिन्दी": {
         "title": "📄 स्मार्ट PDF और करियर असिस्टेंट",
         "pdf": "स्मार्ट PDF सरलकर्ता",
         "resume": "रिज्यूमे मैचर",
-        "upload": "PDF फ़ाइल अपलोड करें",
-        "resume_text": "रिज्यूमे पेस्ट करें",
-        "job_text": "जॉब विवरण पेस्ट करें",
-        "processed": "✅ PDF सफलतापूर्वक प्रोसेस हो गई"
+        "upload": "PDF फ़ाइल अपलोड करें"
     }
 }
+
 
 language = st.sidebar.selectbox(
     "🌐 Language",
@@ -45,19 +38,29 @@ t = translations[language]
 
 st.title(t["title"])
 
+
 feature = st.sidebar.selectbox(
     "Choose Feature",
-    [t["pdf"], t["resume"]]
+    [
+        t["pdf"],
+        t["resume"]
+    ]
 )
+
+
+# -------------------------
+# PDF SIMPLIFIER
+# -------------------------
 
 if feature == t["pdf"]:
 
-    st.subheader("📄 " + t["pdf"])
+    st.subheader(t["pdf"])
 
     uploaded_file = st.file_uploader(
         t["upload"],
         type=["pdf"]
     )
+
 
     if uploaded_file:
 
@@ -68,66 +71,163 @@ if feature == t["pdf"]:
         for page in reader.pages:
             text += page.extract_text() or ""
 
+
         words = text.split()
 
-        st.success(t["processed"])
 
-        st.write("## 📊 Document Statistics")
+        if len(words) == 0:
+            st.error(
+                "No readable text found. This PDF may be scanned."
+            )
 
-        pages = len(reader.pages)
-        word_count = len(words)
-        reading_time = max(1, round(word_count / 200))
+        else:
 
-        col1, col2, col3 = st.columns(3)
+            st.success(
+                "✅ PDF Processed Successfully"
+            )
 
-        col1.metric("Pages", pages)
-        col2.metric("Words", word_count)
-        col3.metric("Reading Time", f"{reading_time} min")
 
-        st.write("## 📝 Short Summary")
+            # Statistics
 
-        summary = " ".join(words[:200])
+            st.write("## 📊 Document Statistics")
 
-        st.info(summary + "...")
+            col1, col2, col3 = st.columns(3)
 
-        st.write("## 🎯 Important Keywords")
+            col1.metric(
+                "Pages",
+                len(reader.pages)
+            )
 
-        keywords = []
+            col2.metric(
+                "Words",
+                len(words)
+            )
 
-        for word in words:
-            clean_word = word.lower().strip(",.!?;:()[]{}")
+            col3.metric(
+                "Reading Time",
+                f"{max(1, round(len(words)/200))} min"
+            )
 
-            if len(clean_word) > 5 and clean_word not in keywords:
-                keywords.append(clean_word)
 
-        st.success(", ".join(keywords[:20]))
+            # Summary
+
+            st.write("## 📝 Smart Summary")
+
+
+            summary = " ".join(words[:200])
+
+
+            if language == "తెలుగు":
+
+                summary = GoogleTranslator(
+                    source="auto",
+                    target="te"
+                ).translate(summary)
+
+
+            elif language == "हिन्दी":
+
+                summary = GoogleTranslator(
+                    source="auto",
+                    target="hi"
+                ).translate(summary)
+
+
+            st.info(summary)
+
+
+            # Keywords
+
+            st.write("## 🎯 Important Keywords")
+
+
+            keywords = []
+
+            for word in words:
+
+                clean = word.lower().strip(
+                    ",.!?;:()[]{}"
+                )
+
+                if len(clean) > 5:
+                    if clean not in keywords:
+                        keywords.append(clean)
+
+
+            keyword_text = ", ".join(
+                keywords[:20]
+            )
+
+
+            if language == "తెలుగు":
+
+                keyword_text = GoogleTranslator(
+                    source="auto",
+                    target="te"
+                ).translate(keyword_text)
+
+
+            elif language == "हिन्दी":
+
+                keyword_text = GoogleTranslator(
+                    source="auto",
+                    target="hi"
+                ).translate(keyword_text)
+
+
+            st.success(keyword_text)
+
+
+
+# -------------------------
+# RESUME MATCHER
+# -------------------------
 
 elif feature == t["resume"]:
 
-    st.subheader("💼 " + t["resume"])
+    st.subheader(t["resume"])
 
-    resume = st.text_area(t["resume_text"])
 
-    job = st.text_area(t["job_text"])
+    resume = st.text_area(
+        "Paste Resume"
+    )
+
+
+    job = st.text_area(
+        "Paste Job Description"
+    )
+
 
     if resume and job:
 
-        resume_words = set(resume.lower().split())
-        job_words = set(job.lower().split())
 
-        match_score = (
+        resume_words = set(
+            resume.lower().split()
+        )
+
+        job_words = set(
+            job.lower().split()
+        )
+
+
+        score = (
             len(resume_words & job_words)
-            / len(job_words)
+            /
+            len(job_words)
         ) * 100
+
 
         st.metric(
             "Match Score",
-            f"{match_score:.2f}%"
+            f"{score:.2f}%"
         )
 
-        if match_score > 60:
+
+        if score > 60:
             st.success("🎯 Good Match")
-        elif match_score > 30:
+
+        elif score > 30:
             st.warning("⚠️ Partial Match")
+
         else:
             st.error("❌ Low Match")
