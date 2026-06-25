@@ -1,0 +1,26 @@
+stages:
+  - quality
+  - test
+
+default:
+  image: python:3.11
+
+before_script:
+  - python --version
+  - pip install --upgrade pip
+  - pip install -r requirements.txt
+  - pip install -r requirements-dev.txt
+
+format_lint_type_security:
+  stage: quality
+  script:
+    - black --check .
+    - ruff check .
+    - mypy ai_chat.py
+    - vulture ai_chat.py
+    - bandit -q -r ai_chat.py tests -s B101,B110
+
+unit_tests:
+  stage: test
+  script:
+    - pytest -q tests
